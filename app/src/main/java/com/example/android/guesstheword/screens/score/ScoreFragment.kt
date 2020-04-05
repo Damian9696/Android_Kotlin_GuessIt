@@ -34,7 +34,7 @@ import com.example.android.guesstheword.databinding.ScoreFragmentBinding
  */
 class ScoreFragment : Fragment() {
 
-    private lateinit var scoreViewModel: ScoreViewModel
+    private lateinit var viewModel: ScoreViewModel
     private lateinit var scoreViewModelFactory: ScoreViewModelFactory
 
     override fun onCreateView(
@@ -55,20 +55,20 @@ class ScoreFragment : Fragment() {
         val scoreFragmentArgs by navArgs<ScoreFragmentArgs>()
 
         scoreViewModelFactory = ScoreViewModelFactory(scoreFragmentArgs.score)
-        scoreViewModel = ViewModelProviders.of(this, scoreViewModelFactory).get(ScoreViewModel::class.java)
+        viewModel = ViewModelProviders.of(this, scoreViewModelFactory).get(ScoreViewModel::class.java)
 
-        scoreViewModel.score.observe(this, Observer { finalScore ->
+        binding.scoreViewModel = viewModel
+
+        viewModel.score.observe(this, Observer { finalScore ->
             binding.scoreText.text = finalScore.toString()
         })
 
-        scoreViewModel.eventPlayAgain.observe(this, Observer { hasPlayedAgain ->
+        viewModel.eventPlayAgain.observe(this, Observer { hasPlayedAgain ->
             if (hasPlayedAgain) {
                 findNavController().navigate(ScoreFragmentDirections.actionRestart())
-                scoreViewModel.eventPlayAgainComplete()
+                viewModel.eventPlayAgainComplete()
             }
         })
-
-        binding.playAgainButton.setOnClickListener { scoreViewModel.onPlayAgain() }
 
         return binding.root
     }
