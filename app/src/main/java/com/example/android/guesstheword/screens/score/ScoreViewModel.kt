@@ -3,6 +3,7 @@ package com.example.android.guesstheword.screens.score
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 
 /**
@@ -13,6 +14,11 @@ class ScoreViewModel(finalScore: Int) : ViewModel() {
     private val _score = MutableLiveData<Int>()
     val score: LiveData<Int>
         get() = _score
+
+    //keeping this type of logic out of xml code
+    val currentScoreString: LiveData<String> = Transformations.map(score) {
+        it.toString()
+    }
 
     private val _eventPlayAgain = MutableLiveData<Boolean>()
     val eventPlayAgain: LiveData<Boolean>
