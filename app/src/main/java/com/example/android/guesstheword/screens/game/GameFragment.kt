@@ -16,11 +16,15 @@
 
 package com.example.android.guesstheword.screens.game
 
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.getSystemService
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -50,15 +54,31 @@ class GameFragment : Fragment() {
         )
 
         Log.i("GameFragment", "Called GameViewModel!")
+
+        // Get the viewmodel
         viewModel = ViewModelProviders.of(this).get(GameViewModel::class.java)
 
+        // Set the viewmodel for databinding - this allows the bound layout access to all of the
+        // data in the VieWModel
         binding.gameViewModel = viewModel
+
+        // Specify the current activity as the lifecycle owner of the binding. This is used so that
+        // the binding can observe LiveData updates
         binding.lifecycleOwner = this
 
+        // Sets up event listening to navigate the player when the game is finished
         viewModel.eventGameFinish.observe(this, Observer { hasFinished ->
             if (hasFinished) {
                 gameFinished()
                 viewModel.onGameFinishComplete()
+            }
+        })
+
+        // Buzzes when triggered with different buzz events
+        viewModel.eventBuzz.observe(this, Observer { buzzType ->
+            if (buzzType != BuzzType.NO_BUZZ) {
+                buzz(buzzType.pattern)
+                viewModel.onBuzzComplete()
             }
         })
 
@@ -75,5 +95,19 @@ class GameFragment : Fragment() {
          */
         val action = GameFragmentDirections.actionGameToScore(viewModel.score.value ?: 0)
         findNavController(this).navigate(action)
+    }
+
+    /**
+     * Given a pattern, this method makes sure the device buzzes
+     */
+    private fun buzz(pattern: LongArray) {
+        val buzzer = activity?.getSystemService<Vibrator>()
+
+        buzzer?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                buzzer.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            }
+        }
+
     }
 }

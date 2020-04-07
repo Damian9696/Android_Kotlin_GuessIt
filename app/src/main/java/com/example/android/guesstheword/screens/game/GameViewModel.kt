@@ -12,6 +12,27 @@ import androidx.lifecycle.ViewModel
  * Created by Damian on 29.03.2020 18:46
  */
 
+/*
+Vibration is controlled by passing in an array representing the number of milliseconds each
+interval of buzzing and non-buzzing takes.
+ */
+private val CORRECT_BUZZ_PATTERN = longArrayOf(100, 100, 100, 100, 100, 100)
+private val WRONG_BUZZ_PATTERN = longArrayOf(100, 100, 100, 100)
+private val PANIC_BUZZ_PATTERN = longArrayOf(0, 200)
+private val GAME_OVER_BUZZ_PATTERN = longArrayOf(0, 2000)
+private val NO_BUZZ_PATTERN = longArrayOf(0)
+
+/*
+This enum will represent the different types of buzzing that can occur
+ */
+enum class BuzzType(val pattern: LongArray) {
+    CORRECT(CORRECT_BUZZ_PATTERN),
+    WRONG(WRONG_BUZZ_PATTERN),
+    GAME_OVER(GAME_OVER_BUZZ_PATTERN),
+    COUNTDOWN_PANIC(PANIC_BUZZ_PATTERN),
+    NO_BUZZ(NO_BUZZ_PATTERN)
+}
+
 class GameViewModel : ViewModel() {
 
     companion object {
@@ -23,8 +44,13 @@ class GameViewModel : ViewModel() {
         const val ONE_SECOND = 1000L
 
         // This is the total time of the game
-        const val COUNTDOWN_TIME = 10000L
+        const val COUNTDOWN_TIME = 60000L
     }
+
+    // Event that triggers the phone to buzz using different patterns, determined by BuzzType
+    private val _eventBuzz = MutableLiveData<BuzzType>()
+    val eventBuzz: LiveData<BuzzType>
+        get() = _eventBuzz
 
     private val timer: CountDownTimer
 
@@ -48,6 +74,7 @@ class GameViewModel : ViewModel() {
     val score: LiveData<Int>
         get() = _score
 
+    // Event which triggers the end of the game
     private val _eventGameFinish = MutableLiveData<Boolean>()
     val eventGameFinish: LiveData<Boolean>
         get() = _eventGameFinish
@@ -75,11 +102,13 @@ class GameViewModel : ViewModel() {
 
             override fun onTick(millisUntilFinished: Long) {
                 _currentTime.value = (millisUntilFinished / ONE_SECOND)
+                _eventBuzz.value = BuzzType.COUNTDOWN_PANIC
             }
 
             override fun onFinish() {
                 _currentTime.value = DONE
                 _eventGameFinish.value = true
+                _eventBuzz.value = BuzzType.GAME_OVER
             }
         }
 
@@ -132,25 +161,36 @@ class GameViewModel : ViewModel() {
     fun onSkip() {
         //First creating of live data, value holds null, so must used nullable operator ?.
         _score.value = (score.value)?.minus(1)
+        _eventBuzz.value = BuzzType.WRONG
         nextWord()
     }
 
     fun onCorrect() {
         //First creating of live data, value holds null, so must used nullable operator ?.
         _score.value = (score.value)?.plus(1)
+        _eventBuzz.value = BuzzType.CORRECT
         nextWord()
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.i("GameViewModel", "onCleared destroyed!")
-        timer.cancel()
-    }
+    /** Methods for completed events **/
 
     /**
      * Represent that, event game finish has handled
      */
     fun onGameFinishComplete() {
         _eventGameFinish.value = false
+    }
+
+    /**
+     * Represent that, event no buzz has handled
+     */
+    fun onBuzzComplete() {
+        _eventBuzz.value = BuzzType.NO_BUZZ
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i("GameViewModel", "onCleared destroyed!")
+        timer.cancel()
     }
 }
